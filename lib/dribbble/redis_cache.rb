@@ -3,6 +3,9 @@ module Dribbble
     include HTTParty
     base_uri 'api.dribbble.com'
 
+    MAX_HITS_PER_MINUTE = 55 # Padded down from actual 60 to be safe
+    HIT_COUNTER_KEY = 'hits-this-minute'
+
     attr_reader :value
 
     def self.fetch(path, options)
@@ -32,14 +35,34 @@ module Dribbble
 
     private 
 
+    def over_api_limit?
+      @connection.get(HIT_COUNTER_KEY).to_i >= MAX_HITS_PER_MINUTE
+    end
+
+    def take_a_nap
+      ttl = @connection.ttl(HIT_COUNTER_KEY).to_i
+      sleep ttl if ttl > 0
+    end
+
+    def increase_hit_count
+      ttl = @connection.ttl HIT_COUNTER_KEY
+      ttl = 60 if ttl == -1
+      @connection.incr HIT_COUNTER_KEY
+      @connection.expire HIT_COUNTER_KEY, ttl
+    end
+
     def cache_response
-      live_value = api_response.to_json
-      @connection.set @key, live_value
-      @connection.expire @key, 60
-      live_value
+      if over_api_limit?
+        take_a_nap
+        # TODO: Implement query queueing
+        cache_response
+      else
+        live_value = api_response.to_json
+        @connection.set @key, live_value
+        @connection.expire @key, 60
+        increase_hit_count
+        live_value
+      end
     end
   end
 end
-
-#TODO: Add an api-hits-this-minute key, expires in 60". Pad cap down to 55.
-#      If value is > 55, put requests on queue, sleep key's TTL
