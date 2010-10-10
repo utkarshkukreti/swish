@@ -45,6 +45,11 @@ module Dribbble
       sleep ttl if ttl > 0
     end
 
+    #NOTE: This is not threadsafe! Need to come up with a way multiple threads can update
+    #      the value at the same time, despite having read the same base number.
+    #      Perhaps a list which we count rather than an int? Nope. Volatile key clearing on write...
+    #      May have to handroll expiring. Store timestamps in list? Clear elements older than 60 seconds,
+    #      then check LLEN. Could be slow...
     def increase_hit_count
       ttl = @connection.ttl HIT_COUNTER_KEY
       expire_at = Time.now.to_i + (ttl == -1 ? ONE_MINUTE : ttl)
