@@ -5,6 +5,7 @@ module Dribbble
 
     MAX_HITS_PER_MINUTE = 55 # Padded down from actual 60 to be safe
     HIT_COUNTER_KEY = 'hits-this-minute'
+    ONE_MINUTE = 60
 
     attr_reader :value
 
@@ -46,8 +47,9 @@ module Dribbble
 
     def increase_hit_count
       ttl = @connection.ttl HIT_COUNTER_KEY
-      ttl = 60 if ttl == -1
-      @connection.incr HIT_COUNTER_KEY
+      ttl = ONE_MINUTE if ttl == -1
+      val = @connection.get(HIT_COUNTER_KEY).to_i
+      @connection.set HIT_COUNTER_KEY, val + 1
       @connection.expire HIT_COUNTER_KEY, ttl
     end
 
@@ -59,7 +61,7 @@ module Dribbble
       else
         live_value = api_response.to_json
         @connection.set @key, live_value
-        @connection.expire @key, 60
+        @connection.expire @key, ONE_MINUTE
         increase_hit_count
         live_value
       end
