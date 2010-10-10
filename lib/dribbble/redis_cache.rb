@@ -47,10 +47,10 @@ module Dribbble
 
     def increase_hit_count
       ttl = @connection.ttl HIT_COUNTER_KEY
-      ttl = ONE_MINUTE if ttl == -1
+      expire_at = Time.now.to_i + (ttl == -1 ? ONE_MINUTE : ttl)
       val = @connection.get(HIT_COUNTER_KEY).to_i
       @connection.set HIT_COUNTER_KEY, val + 1
-      @connection.expire HIT_COUNTER_KEY, ttl
+      @connection.expireat HIT_COUNTER_KEY, expire_at
     end
 
     def cache_response
