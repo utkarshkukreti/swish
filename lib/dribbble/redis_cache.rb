@@ -51,11 +51,13 @@ module Dribbble
     #      May have to handroll expiring. Store timestamps in list? Clear elements older than 60 seconds,
     #      then check LLEN. Could be slow...
     def increase_hit_count
-      ttl = @connection.ttl HIT_COUNTER_KEY
-      expire_at = Time.now.to_i + (ttl == -1 ? ONE_MINUTE : ttl)
-      val = @connection.get(HIT_COUNTER_KEY).to_i
-      @connection.set HIT_COUNTER_KEY, val + 1
-      @connection.expireat HIT_COUNTER_KEY, expire_at
+      @connection.multi do
+        ttl = @connection.ttl HIT_COUNTER_KEY
+        expire_at = Time.now.to_i + (ttl == -1 ? ONE_MINUTE : ttl)
+        val = @connection.get(HIT_COUNTER_KEY).to_i
+        @connection.set HIT_COUNTER_KEY, val + 1
+        @connection.expireat HIT_COUNTER_KEY, expire_at
+      end
     end
 
     def cache_response
