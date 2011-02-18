@@ -5,6 +5,7 @@ PATH
       crack (~> 0.1.8)
       httparty (~> 0.6.1)
       json_pure (~> 1.4.6)
+      redis (~> 2.0.10)
 
 GEM
   remote: http://rubygems.org/
@@ -13,12 +14,11 @@ GEM
     httparty (0.6.1)
       crack (= 0.1.8)
     json_pure (1.4.6)
+    redis (2.0.13)
 
 PLATFORMS
   ruby
+  x86-mingw32
 
 DEPENDENCIES
-  crack (~> 0.1.8)
-  httparty (~> 0.6.1)
-  json_pure (~> 1.4.6)
   swish!
